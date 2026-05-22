@@ -44,7 +44,7 @@ export default function Welcome({ setCurrentTab }) {
               <img
                 src="/logo MYC.jpeg"
                 alt="MYC Logo"
-                className="h-16 w-auto object-contain brightness-0 invert"
+                className="h-16 w-auto object-contain"
               />
             </div>
           </div>
