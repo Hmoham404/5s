@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+/* Base Resets & Global Custom Styles */
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-800 antialiased font-sans selection:bg-red-500/20 selection:text-red-700;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-300 rounded-full hover:bg-slate-400;
+}
+
+/* Specific styling for the PDF A4 layout */
+.pdf-container {
+  width: 210mm;
+  min-height: 297mm;
+  padding: 20mm;
+  margin: 0 auto;
+  background: white;
+  box-sizing: border-box;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+@media print {
+  body {
+    background: white;
+    color: black;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .pdf-container {
+    padding: 0;
+    margin: 0;
+    width: 100%;
+    height: auto;
+    border: none;
+    box-shadow: none;
+  }
+  .page-break {
+    page-break-before: always;
+  }
+}
