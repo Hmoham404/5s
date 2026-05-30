@@ -1,13 +1,11 @@
-import React, { useState, useEffect } from "react";
+import { useState } from "react";
 import {
-  FileText,
   Download,
   Calendar,
   User,
   CheckCircle,
   MapPin,
   PenTool,
-  AlertTriangle,
   Award
 } from "lucide-react";
 import { useAudit } from "../context/AuditContext";
@@ -40,12 +38,6 @@ export default function Report() {
     { key: "standardize", name: "Standardiser (Standardize)", desc: "Formaliser les bonnes pratiques" },
     { key: "sustain", name: "Maintenir (Sustain)", desc: "Suivre et pérenniser les standards" }
   ];
-
-  const getScoreColor = (score) => {
-    if (score < 50) return "text-red-600 bg-red-50 border-red-200";
-    if (score <= 75) return "text-amber-600 bg-amber-50 border-amber-200";
-    return "text-emerald-600 bg-emerald-50 border-emerald-200";
-  };
 
   const handleExportPDF = async () => {
     const reportElem = document.getElementById("pdf-report-content");
@@ -88,7 +80,7 @@ export default function Report() {
         heightLeft -= pdfHeight;
       }
 
-      const safeZoneName = selectedZone.name.replace(/[^a-z0-9]/gi, "_").toLowerCase();
+      const safeZoneName = (selectedZone?.name || "zone").replace(/[^a-z0-9]/gi, "_").toLowerCase();
       pdf.save(`Rapport_5S_MYC_${safeZoneName}_${auditDate}.pdf`);
     } catch (error) {
       console.error("Erreur lors de la génération du PDF", error);
@@ -145,8 +137,12 @@ export default function Report() {
             {/* 1. Header with brand colors */}
             <div className="flex items-center justify-between border-b-4 border-red-600 pb-4">
               <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded bg-red-600 font-extrabold text-lg text-white">
-                  MYC
+                <div className="flex h-14 w-14 items-center justify-center rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
+                  <img
+                    src="/logo MYC.jpeg"
+                    alt="MYC Logo"
+                    className="h-full w-full object-contain"
+                  />
                 </div>
                 <div>
                   <h1 className="text-base font-extrabold tracking-tight text-slate-900 uppercase">MYC Innovation</h1>
