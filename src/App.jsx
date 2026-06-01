@@ -1,17 +1,19 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import Sidebar from "./components/Sidebar";
 import Dashboard from "./components/Dashboard";
 import Zones from "./components/Zones";
 import AuditForm from "./components/AuditForm";
-import ActionPlan from "./components/ActionPlan";
 import Report from "./components/Report";
 import Welcome from "./components/Welcome";
 import AuditCalendar from "./components/AuditCalendar";
 import { AuditProvider } from "./context/AuditContext";
+import { TranslationProvider, useTranslation } from "./context/TranslationContext";
+import TranslationBar from "./components/TranslationBar";
 
 function MainAppContent() {
   const [currentTab, setCurrentTab] = useState("welcome");
   const [selectedZoneId, setSelectedZoneId] = useState(null);
+  const { dir } = useTranslation();
 
   const isFullscreen = currentTab === "welcome";
 
@@ -38,8 +40,6 @@ function MainAppContent() {
             setSelectedZoneId={setSelectedZoneId}
           />
         );
-      case "actions":
-        return <ActionPlan />;
       case "report":
         return <Report />;
       default:
@@ -50,7 +50,8 @@ function MainAppContent() {
   if (isFullscreen) {
     // Welcome page: full screen without sidebar margins
     return (
-      <div className="min-h-screen bg-slate-950 text-slate-100 relative">
+      <div className="min-h-screen bg-slate-950 text-slate-100 relative" dir={dir}>
+        <TranslationBar />
         {/* Sidebar overlaid on welcome */}
         <div className="fixed inset-y-0 left-0 z-30">
           <Sidebar currentTab={currentTab} setCurrentTab={setCurrentTab} />
@@ -64,13 +65,14 @@ function MainAppContent() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800">
+    <div className="min-h-screen bg-slate-50 text-slate-800" dir={dir}>
+      <TranslationBar />
       {/* Sidebar on the left */}
       <Sidebar currentTab={currentTab} setCurrentTab={setCurrentTab} />
 
       {/* Main content body on the right */}
       <main className="pl-72 min-h-screen">
-        <div className="container mx-auto px-8 py-8 max-w-7xl">
+        <div className="container mx-auto max-w-7xl px-8 py-20">
           {renderContent()}
         </div>
       </main>
@@ -80,8 +82,10 @@ function MainAppContent() {
 
 export default function App() {
   return (
-    <AuditProvider>
-      <MainAppContent />
-    </AuditProvider>
+    <TranslationProvider>
+      <AuditProvider>
+        <MainAppContent />
+      </AuditProvider>
+    </TranslationProvider>
   );
 }

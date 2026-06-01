@@ -1,23 +1,23 @@
-import React, { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   ClipboardCheck,
   Calendar,
   User,
   CheckCircle,
-  HelpCircle,
-  FileCheck,
-  AlertTriangle,
   Info
 } from "lucide-react";
 import { useAudit } from "../context/AuditContext";
 import { checklist5S } from "../data/mockData";
+import { useTranslation } from "../context/TranslationContext";
 
 export default function AuditForm({ setCurrentTab, selectedZoneId, setSelectedZoneId }) {
   const { zones, submitAudit } = useAudit();
+  const { t, getZoneName, getQuestionText, formatDate } = useTranslation();
 
-  const [zoneId, setZoneId] = useState(selectedZoneId || zones[0]?.id || "");
+  const [internalZoneId, setInternalZoneId] = useState(selectedZoneId || zones[0]?.id || "");
   const [auditor, setAuditor] = useState("DG Sami Ladjimi");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const zoneId = selectedZoneId || internalZoneId;
   
   // Answers state: key-value of { questionId: score }
   // Initialize all questions with an acceptable rating of 3
@@ -44,26 +44,9 @@ export default function AuditForm({ setCurrentTab, selectedZoneId, setSelectedZo
   const [isSuccess, setIsSuccess] = useState(false);
   const [lastAuditResult, setLastAuditResult] = useState(null);
 
-  // Sync selectedZoneId from parent if it changes
-  useEffect(() => {
-    if (selectedZoneId) {
-      setZoneId(selectedZoneId);
-      // Auto-set standard action responsible based on the zone manager's department
-      const selectedZone = zones.find(z => z.id === selectedZoneId);
-      if (selectedZone) {
-        const match = selectedZone.manager.match(/\(([^)]+)\)/);
-        if (match && match[1]) {
-          setActionResponsible(match[1]);
-        } else {
-          setActionResponsible("Qualité");
-        }
-      }
-    }
-  }, [selectedZoneId]);
-
   // Handle changing selected zone
   const handleZoneChange = (id) => {
-    setZoneId(id);
+    setInternalZoneId(id);
     setSelectedZoneId(id);
     const selectedZone = zones.find(z => z.id === id);
     if (selectedZone) {
@@ -78,12 +61,12 @@ export default function AuditForm({ setCurrentTab, selectedZoneId, setSelectedZo
 
   // Notation criteria labels
   const scoresDescriptions = {
-    0: "Non appliqué (Zéro effort)",
-    1: "Très faible (Début embryonnaire)",
-    2: "Partiellement appliqué (Incomplet)",
-    3: "Acceptable (Niveau standard requis)",
-    4: "Bon niveau (Bien maintenu)",
-    5: "Excellent / maîtrisé (Modèle exemplaire)"
+    0: t("auditForm.scoreDescriptions.0"),
+    1: t("auditForm.scoreDescriptions.1"),
+    2: t("auditForm.scoreDescriptions.2"),
+    3: t("auditForm.scoreDescriptions.3"),
+    4: t("auditForm.scoreDescriptions.4"),
+    5: t("auditForm.scoreDescriptions.5")
   };
 
   // Notation colors
@@ -119,7 +102,7 @@ export default function AuditForm({ setCurrentTab, selectedZoneId, setSelectedZo
       auditor,
       date,
       answers,
-      comment: hasDeviation ? `Déviations signalées. ${deviation}` : "R.A.S. Zone propre et conforme aux exigences 5S.",
+      comment: hasDeviation ? t("auditForm.commentDeviation", { deviation }) : t("auditForm.commentOk"),
       deviation: hasDeviation ? deviation : "",
       proposedAction: hasDeviation ? proposedAction : "",
       priority: hasDeviation ? priority : "",
@@ -142,11 +125,11 @@ export default function AuditForm({ setCurrentTab, selectedZoneId, setSelectedZo
   // Group questions by pilier
   const piliersList = ["Sort", "Set in order", "Shine", "Standardize", "Sustain"];
   const pilierLabels = {
-    "Sort": "1. Trier (Sort) — Éliminer l'inutile",
-    "Set in order": "2. Ranger (Set in order) — Une place pour chaque chose",
-    "Shine": "3. Nettoyer (Shine) — Nettoyage et inspection",
-    "Standardize": "4. Standardiser (Standardize) — Définir et respecter les règles",
-    "Sustain": "5. Maintenir (Sustain) — Audits et amélioration continue"
+    "Sort": t("auditForm.pillarTitles.sort"),
+    "Set in order": t("auditForm.pillarTitles.setInOrder"),
+    "Shine": t("auditForm.pillarTitles.shine"),
+    "Standardize": t("auditForm.pillarTitles.standardize"),
+    "Sustain": t("auditForm.pillarTitles.sustain")
   };
 
   if (isSuccess) {
@@ -157,16 +140,16 @@ export default function AuditForm({ setCurrentTab, selectedZoneId, setSelectedZo
         </div>
         
         <div className="space-y-2">
-          <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">Audit enregistré avec succès !</h2>
+          <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">{t("auditForm.successTitle")}</h2>
           <p className="text-sm text-slate-500">
-            Les données de la zone <span className="font-bold text-slate-800">{lastAuditResult?.zoneName}</span> ont été recalculées et intégrées en temps réel.
+            {t("auditForm.successDescription", { zoneName: getZoneName(lastAuditResult?.zoneId || lastAuditResult?.zoneName, lastAuditResult?.zoneName) })}
           </p>
         </div>
 
         {/* Audit Results summary Card */}
         <div className="rounded-xl bg-slate-50 p-6 border border-slate-100 space-y-4 max-w-md mx-auto text-left">
           <div className="flex justify-between items-center">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Score de la zone :</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">{t("auditForm.zoneScore")}</span>
             <span className={`px-3 py-1 rounded-lg text-sm font-extrabold text-white ${
               lastAuditResult?.score < 50 ? "bg-red-500" : lastAuditResult?.score <= 75 ? "bg-amber-500" : "bg-emerald-500"
             }`}>
@@ -176,20 +159,20 @@ export default function AuditForm({ setCurrentTab, selectedZoneId, setSelectedZo
 
           <div className="border-t border-slate-200/60 pt-3 space-y-2.5">
             <div className="flex justify-between text-xs">
-              <span className="text-slate-500 font-semibold">Auditeur :</span>
+              <span className="text-slate-500 font-semibold">{t("auditForm.auditor")}:</span>
               <span className="font-bold text-slate-800">{lastAuditResult?.auditor}</span>
             </div>
             <div className="flex justify-between text-xs">
-              <span className="text-slate-500 font-semibold">Date d'audit :</span>
-              <span className="font-bold text-slate-800">{lastAuditResult?.date}</span>
+              <span className="text-slate-500 font-semibold">{t("auditForm.date")}:</span>
+              <span className="font-bold text-slate-800">{formatDate(lastAuditResult?.date)}</span>
             </div>
             {lastAuditResult?.deviation && (
               <div className="border-t border-slate-200/60 pt-2.5 space-y-1.5">
-                <span className="text-[10px] font-bold text-amber-600 uppercase block tracking-wider">Action corrective initiée :</span>
+                <span className="text-[10px] font-bold text-amber-600 uppercase block tracking-wider">{t("auditForm.correctiveAction")}</span>
                 <p className="text-xs font-bold text-slate-800">{lastAuditResult?.proposedAction}</p>
                 <div className="flex justify-between text-[11px]">
-                  <span className="text-slate-500 font-medium">Responsable: <span className="font-semibold text-slate-800">{lastAuditResult?.actionResponsible || actionResponsible}</span></span>
-                  <span className="text-slate-500 font-medium">Priorité: <span className="font-semibold text-red-600">{priority}</span></span>
+                  <span className="text-slate-500 font-medium">{t("common.responsible")}: <span className="font-semibold text-slate-800">{lastAuditResult?.actionResponsible || actionResponsible}</span></span>
+                  <span className="text-slate-500 font-medium">{t("auditForm.priority")}: <span className="font-semibold text-red-600">{priority}</span></span>
                 </div>
               </div>
             )}
@@ -201,7 +184,7 @@ export default function AuditForm({ setCurrentTab, selectedZoneId, setSelectedZo
             onClick={handleBackToDashboard}
             className="w-full sm:w-auto rounded-xl bg-slate-900 px-6 py-2.5 text-sm font-bold text-white hover:bg-slate-800 cursor-pointer shadow-sm"
           >
-            Retour au Dashboard
+            {t("auditForm.backDashboard")}
           </button>
           
           <button
@@ -220,7 +203,7 @@ export default function AuditForm({ setCurrentTab, selectedZoneId, setSelectedZo
             }}
             className="w-full sm:w-auto rounded-xl border border-slate-200 bg-transparent px-6 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
           >
-            Nouvel audit de zone
+            {t("auditForm.newZoneAudit")}
           </button>
         </div>
       </div>
@@ -232,9 +215,9 @@ export default function AuditForm({ setCurrentTab, selectedZoneId, setSelectedZo
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200 pb-5">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Simuler un Audit 5S Interne</h2>
+          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">{t("auditForm.title")}</h2>
           <p className="text-sm text-slate-500 mt-0.5">
-            Saisissez les notes de 0 à 5 pour chacun des 5 piliers de la checklist industrielle 5S.
+            {t("auditForm.subtitle")}
           </p>
         </div>
       </div>
@@ -244,13 +227,13 @@ export default function AuditForm({ setCurrentTab, selectedZoneId, setSelectedZo
         {/* Step 1: Metadata Card */}
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
           <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-2.5">
-            Informations d'Audit
+            {t("auditForm.infoTitle")}
           </h3>
 
           <div className="grid gap-4.5 grid-cols-1 md:grid-cols-3">
             {/* Zone Choice */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-slate-500">Zone à auditer *</label>
+              <label className="text-xs font-semibold text-slate-500">{t("auditForm.zone")}</label>
               <select
                 required
                 value={zoneId}
@@ -259,7 +242,7 @@ export default function AuditForm({ setCurrentTab, selectedZoneId, setSelectedZo
               >
                 {zones.map((z) => (
                   <option key={z.id} value={z.id}>
-                    {z.name} (Actuel: {z.score}%)
+                    {getZoneName(z)} ({t("common.scoreGlobal")}: {z.score}%)
                   </option>
                 ))}
               </select>
@@ -267,7 +250,7 @@ export default function AuditForm({ setCurrentTab, selectedZoneId, setSelectedZo
 
             {/* Date d'audit */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-slate-500">Date de l'audit *</label>
+              <label className="text-xs font-semibold text-slate-500">{t("auditForm.date")}</label>
               <div className="relative">
                 <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <input
@@ -282,7 +265,7 @@ export default function AuditForm({ setCurrentTab, selectedZoneId, setSelectedZo
 
             {/* Auditeur */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-slate-500">Nom de l'auditeur *</label>
+              <label className="text-xs font-semibold text-slate-500">{t("auditForm.auditor")}</label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <input
@@ -290,7 +273,7 @@ export default function AuditForm({ setCurrentTab, selectedZoneId, setSelectedZo
                   type="text"
                   value={auditor}
                   onChange={(e) => setAuditor(e.target.value)}
-                  placeholder="Ex: M. Lassaad"
+                  placeholder={t("auditForm.placeholders.auditor")}
                   className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2 pl-10 pr-3 text-sm text-slate-800 focus:border-red-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-red-500 transition-all font-medium"
                 />
               </div>
@@ -303,14 +286,14 @@ export default function AuditForm({ setCurrentTab, selectedZoneId, setSelectedZo
           <div className="space-y-0.5">
             <h4 className="text-sm font-extrabold text-slate-900 flex items-center gap-1.5">
               <Info className="h-4 w-4 text-red-600" />
-              <span>Calculateur de Score en Temps Réel</span>
+              <span>{t("auditForm.scoreLive")}</span>
             </h4>
             <p className="text-xs text-slate-500 font-medium">
-              Les notes sont automatiquement pondérées sur 5 pour calculer le score final de conformité en %.
+              {t("auditForm.scoreLiveHint")}
             </p>
           </div>
           <div className="text-right">
-            <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">Score estimé</span>
+            <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">{t("auditForm.estimatedScore")}</span>
             <span className="text-3xl font-extrabold text-red-600 tracking-tight">{realTimePercent}%</span>
           </div>
         </div>
@@ -336,10 +319,10 @@ export default function AuditForm({ setCurrentTab, selectedZoneId, setSelectedZo
                           {idx + 1}
                         </span>
                         <div>
-                          <p className="text-sm font-bold text-slate-800 leading-snug">{q.question}</p>
+                          <p className="text-sm font-bold text-slate-800 leading-snug">{getQuestionText(q.id, q.question)}</p>
                           {/* Mini caption based on current score */}
                           <span className="text-[10px] font-semibold text-slate-400 mt-1 block">
-                            Note actuelle: {answers[q.id]} / 5 — <span className="text-slate-500 font-medium italic">{scoresDescriptions[answers[q.id]]}</span>
+                            {t("auditForm.currentRating", { score: answers[q.id], description: scoresDescriptions[answers[q.id]] })}
                           </span>
                         </div>
                       </div>
@@ -372,7 +355,7 @@ export default function AuditForm({ setCurrentTab, selectedZoneId, setSelectedZo
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
             <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
-              Écarts & Actions Correctives (Optionnel)
+              {t("auditForm.deviations")}
             </h3>
             
             <label className="inline-flex items-center gap-2 cursor-pointer">
@@ -382,7 +365,7 @@ export default function AuditForm({ setCurrentTab, selectedZoneId, setSelectedZo
                 onChange={(e) => setHasDeviation(e.target.checked)}
                 className="rounded text-red-600 focus:ring-red-500 h-4 w-4 border-slate-300"
               />
-              <span className="text-xs font-bold text-slate-700">Créer une action corrective ?</span>
+              <span className="text-xs font-bold text-slate-700">{t("auditForm.createAction")}</span>
             </label>
           </div>
 
@@ -391,26 +374,26 @@ export default function AuditForm({ setCurrentTab, selectedZoneId, setSelectedZo
               <div className="grid gap-4.5 grid-cols-1 md:grid-cols-2">
                 {/* Écart constaté */}
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-semibold text-slate-500">Écart constaté *</label>
+                  <label className="text-xs font-semibold text-slate-500">{t("auditForm.deviation")}</label>
                   <textarea
                     required={hasDeviation}
                     value={deviation}
                     onChange={(e) => setDeviation(e.target.value)}
                     rows={2}
-                    placeholder="Décrivez précisément le problème constaté lors de l'audit..."
+                    placeholder={t("auditForm.placeholders.deviation")}
                     className="w-full rounded-xl border border-slate-200 bg-slate-50/50 p-3 text-xs text-slate-800 placeholder-slate-400 focus:border-red-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-red-500 transition-all"
                   />
                 </div>
 
                 {/* Action corrective proposée */}
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-semibold text-slate-500">Action corrective proposée *</label>
+                  <label className="text-xs font-semibold text-slate-500">{t("auditForm.proposedAction")}</label>
                   <textarea
                     required={hasDeviation}
                     value={proposedAction}
                     onChange={(e) => setProposedAction(e.target.value)}
                     rows={2}
-                    placeholder="Quelle action doit être mise en œuvre pour corriger cet écart ?"
+                    placeholder={t("auditForm.placeholders.action")}
                     className="w-full rounded-xl border border-slate-200 bg-slate-50/50 p-3 text-xs text-slate-800 placeholder-slate-400 focus:border-red-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-red-500 transition-all"
                   />
                 </div>
@@ -419,20 +402,20 @@ export default function AuditForm({ setCurrentTab, selectedZoneId, setSelectedZo
               <div className="grid gap-4.5 grid-cols-1 md:grid-cols-3">
                 {/* Responsable de l'action */}
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-semibold text-slate-500">Département responsable *</label>
+                  <label className="text-xs font-semibold text-slate-500">{t("auditForm.department")}</label>
                   <input
                     required={hasDeviation}
                     type="text"
                     value={actionResponsible}
                     onChange={(e) => setActionResponsible(e.target.value)}
-                    placeholder="Ex: Qualité, Maintenance, Magasinier"
+                    placeholder={t("auditForm.placeholders.department")}
                     className="w-full rounded-xl border border-slate-200 bg-slate-50/50 p-2.5 text-xs text-slate-800 focus:border-red-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-red-500 transition-all"
                   />
                 </div>
 
                 {/* Priorité */}
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-semibold text-slate-500">Priorité *</label>
+                  <label className="text-xs font-semibold text-slate-500">{t("auditForm.priority")}</label>
                   <select
                     required={hasDeviation}
                     value={priority}
@@ -448,7 +431,7 @@ export default function AuditForm({ setCurrentTab, selectedZoneId, setSelectedZo
 
                 {/* Date limite */}
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-semibold text-slate-500">Date limite de résolution *</label>
+                  <label className="text-xs font-semibold text-slate-500">{t("auditForm.dueDate")}</label>
                   <input
                     required={hasDeviation}
                     type="date"
@@ -461,7 +444,7 @@ export default function AuditForm({ setCurrentTab, selectedZoneId, setSelectedZo
             </div>
           ) : (
             <p className="text-xs text-slate-400 italic">
-              Cochez la case ci-dessus si vous avez identifié des écarts à corriger afin d'alimenter automatiquement le Plan d'Action global.
+              {t("auditForm.noDeviationHint")}
             </p>
           )}
         </div>
@@ -473,7 +456,7 @@ export default function AuditForm({ setCurrentTab, selectedZoneId, setSelectedZo
             onClick={() => { setSelectedZoneId(null); setCurrentTab("dashboard"); }}
             className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition"
           >
-            Annuler
+            {t("common.cancel")}
           </button>
           
           <button
@@ -481,7 +464,7 @@ export default function AuditForm({ setCurrentTab, selectedZoneId, setSelectedZo
             className="flex items-center gap-2 rounded-xl bg-red-600 px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-red-600/10 hover:bg-red-700 transition cursor-pointer"
           >
             <ClipboardCheck className="h-4.5 w-4.5" />
-            <span>Valider & Enregistrer l'Audit</span>
+            <span>{t("auditForm.submit")}</span>
           </button>
         </div>
       </form>

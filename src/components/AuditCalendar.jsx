@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useAudit } from "../context/AuditContext";
 import {
   ChevronLeft,
@@ -9,15 +9,9 @@ import {
   MapPin,
   User,
   Trash2,
-  CheckCircle,
-  AlertCircle
+  CheckCircle
 } from "lucide-react";
-
-const MONTHS_FR = [
-  "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
-  "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"
-];
-const DAYS_FR = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
+import { useTranslation } from "../context/TranslationContext";
 
 function getDaysInMonth(year, month) {
   return new Date(year, month + 1, 0).getDate();
@@ -46,6 +40,8 @@ const ZONE_COLORS = {
 
 export default function AuditCalendar({ setCurrentTab, setSelectedZoneId }) {
   const { zones } = useAudit();
+  const { t, getZoneName, getDayLabels, getMonthLabel, formatDate } = useTranslation();
+  const MONTHS_FR = t("calendar.months");
 
   const today = new Date();
   const [viewYear, setViewYear] = useState(today.getFullYear());
@@ -65,7 +61,7 @@ export default function AuditCalendar({ setCurrentTab, setSelectedZoneId }) {
         zoneName: z.name,
         time: "09:00",
         auditor: "DG Sami Ladjimi",
-        note: `Audit 5S — ${z.name}`,
+        note: t("calendar.defaultNote", { zoneName: getZoneName(z) }),
         done: true,
       }));
   });
@@ -113,7 +109,7 @@ export default function AuditCalendar({ setCurrentTab, setSelectedZoneId }) {
       zoneName: zone?.name || form.zoneId,
       time: form.time,
       auditor: form.auditor,
-      note: form.note || `Audit 5S — ${zone?.name}`,
+      note: form.note || t("calendar.defaultNote", { zoneName: getZoneName(zone) }),
       done: false,
     };
     saveEvents([...events, newEvent]);
@@ -149,10 +145,10 @@ export default function AuditCalendar({ setCurrentTab, setSelectedZoneId }) {
         <div>
           <h2 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-3">
             <CalendarIcon className="h-6 w-6 text-red-600" />
-            Calendrier des Audits 5S
+            {t("calendar.title")}
           </h2>
           <p className="text-sm text-slate-500 mt-0.5">
-            Planifiez et suivez les audits de chacune des 12 zones — MYC Innovation Monastir
+            {t("calendar.subtitle")}
           </p>
         </div>
         {selectedDay && (
@@ -161,7 +157,7 @@ export default function AuditCalendar({ setCurrentTab, setSelectedZoneId }) {
             className="flex items-center gap-2 rounded-xl bg-red-600 px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-red-600/20 hover:bg-red-700 transition cursor-pointer"
           >
             <Plus className="h-4 w-4" />
-            Planifier un audit
+            {t("calendar.scheduleAudit")}
           </button>
         )}
       </div>
@@ -178,7 +174,7 @@ export default function AuditCalendar({ setCurrentTab, setSelectedZoneId }) {
               <ChevronLeft className="h-4 w-4 text-slate-600" />
             </button>
             <h3 className="font-extrabold text-slate-900 text-lg">
-              {MONTHS_FR[viewMonth]} {viewYear}
+              {getMonthLabel(viewMonth)} {viewYear}
             </h3>
             <button
               onClick={nextMonth}
@@ -190,7 +186,7 @@ export default function AuditCalendar({ setCurrentTab, setSelectedZoneId }) {
 
           {/* Day Headers */}
           <div className="grid grid-cols-7 border-b border-slate-100">
-            {DAYS_FR.map(d => (
+            {getDayLabels().map(d => (
               <div key={d} className="text-center py-2.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
                 {d}
               </div>
@@ -250,7 +246,7 @@ export default function AuditCalendar({ setCurrentTab, setSelectedZoneId }) {
                           ev.done ? "opacity-50 line-through" : ""
                         } ${ZONE_COLORS[ev.zoneId] || "bg-slate-400"} text-white`}
                       >
-                        {ev.zoneName}
+                        {getZoneName(ev.zoneId, ev.zoneName)}
                       </div>
                     ))}
                     {dayEvents.length > 2 && (
@@ -270,8 +266,8 @@ export default function AuditCalendar({ setCurrentTab, setSelectedZoneId }) {
             <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
               <h4 className="font-bold text-slate-900 text-sm">
                 {selectedDay
-                  ? `${selectedDay} ${MONTHS_FR[viewMonth]} ${viewYear}`
-                  : "Sélectionnez un jour"}
+                  ? `${selectedDay} ${getMonthLabel(viewMonth)} ${viewYear}`
+                  : t("calendar.selectDay")}
               </h4>
               {selectedDay && (
                 <button
@@ -285,18 +281,18 @@ export default function AuditCalendar({ setCurrentTab, setSelectedZoneId }) {
             <div className="divide-y divide-slate-100 max-h-64 overflow-y-auto">
               {!selectedDay && (
                 <p className="p-5 text-sm text-slate-400 text-center">
-                  Cliquez sur une date pour voir ou planifier des audits.
+                  {t("calendar.selectDateHint")}
                 </p>
               )}
               {selectedDay && selectedDayEvents.length === 0 && (
                 <div className="p-5 text-center">
                   <CalendarIcon className="h-8 w-8 text-slate-200 mx-auto mb-2" />
-                  <p className="text-sm text-slate-400">Aucun audit planifié ce jour.</p>
+                  <p className="text-sm text-slate-400">{t("calendar.noAuditDay")}</p>
                   <button
                     onClick={() => setShowForm(true)}
                     className="mt-3 text-xs font-semibold text-red-600 hover:text-red-700 cursor-pointer"
                   >
-                    + Planifier un audit
+                    + {t("calendar.scheduleAudit")}
                   </button>
                 </div>
               )}
@@ -337,7 +333,7 @@ export default function AuditCalendar({ setCurrentTab, setSelectedZoneId }) {
                       onClick={() => handleLaunchAudit(ev.zoneId)}
                       className="text-[11px] font-bold text-red-600 hover:text-red-700 transition cursor-pointer"
                     >
-                      → Lancer cet audit maintenant
+                      {t("calendar.launchNow")}
                     </button>
                   )}
                 </div>
@@ -348,12 +344,12 @@ export default function AuditCalendar({ setCurrentTab, setSelectedZoneId }) {
           {/* Upcoming Audits */}
           <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
             <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/50">
-              <h4 className="font-bold text-slate-900 text-sm">Audits à venir</h4>
+              <h4 className="font-bold text-slate-900 text-sm">{t("calendar.upcomingAudits")}</h4>
             </div>
             <div className="divide-y divide-slate-100 max-h-72 overflow-y-auto">
               {upcomingEvents.length === 0 && (
                 <p className="p-5 text-sm text-slate-400 text-center">
-                  Aucun audit planifié prochainement.
+                  {t("calendar.noneUpcoming")}
                 </p>
               )}
               {upcomingEvents.map(ev => (
@@ -362,14 +358,14 @@ export default function AuditCalendar({ setCurrentTab, setSelectedZoneId }) {
                     <MapPin className="h-4 w-4 text-white" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-slate-800 truncate">{ev.zoneName}</p>
-                    <p className="text-[10px] text-slate-400">{ev.date} à {ev.time}</p>
+                    <p className="text-xs font-bold text-slate-800 truncate">{getZoneName(ev.zoneId, ev.zoneName)}</p>
+                    <p className="text-[10px] text-slate-400">{formatDate(ev.date)} · {ev.time}</p>
                   </div>
                   <button
                     onClick={() => handleLaunchAudit(ev.zoneId)}
                     className="text-[10px] font-bold text-red-600 hover:text-red-700 cursor-pointer whitespace-nowrap"
                   >
-                    Auditer →
+                    {t("calendar.auditArrow")}
                   </button>
                 </div>
               ))}

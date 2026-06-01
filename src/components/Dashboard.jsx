@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   BarChart,
   Bar,
@@ -6,7 +6,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
   RadarChart,
   PolarGrid,
@@ -22,8 +21,6 @@ import {
 import {
   TrendingUp,
   AlertTriangle,
-  CheckCircle,
-  FileCheck,
   MapPin,
   Award,
   Sparkles,
@@ -32,11 +29,11 @@ import {
   ChevronRight
 } from "lucide-react";
 import { useAudit } from "../context/AuditContext";
+import { useTranslation } from "../context/TranslationContext";
 
 export default function Dashboard({ setCurrentTab }) {
   const {
     zones,
-    actions,
     history,
     globalScore,
     zonesAudited,
@@ -44,6 +41,7 @@ export default function Dashboard({ setCurrentTab }) {
     bestZone,
     criticalZone
   } = useAudit();
+  const { t, getZoneName, getPillarLabel, getMonthLabel, formatDate } = useTranslation();
 
   const [selectedHeatmapZone, setSelectedHeatmapZone] = useState(null);
 
@@ -69,7 +67,7 @@ export default function Dashboard({ setCurrentTab }) {
   // Graph Data Preparation
   // A. Bar Chart: Score by Zone
   const barChartData = zones.map((z) => ({
-    name: z.name,
+    name: getZoneName(z),
     Score: z.score,
     color: z.score < 50 ? "#EF4444" : z.score <= 75 ? "#F59E0B" : "#10B981"
   }));
@@ -88,32 +86,26 @@ export default function Dashboard({ setCurrentTab }) {
 
     const numZones = zones.length;
     return [
-      { subject: "Trier (Sort)", A: Number((totals.sort / numZones).toFixed(2)), fullMark: 5 },
-      { subject: "Ranger (Set in order)", A: Number((totals.setInOrder / numZones).toFixed(2)), fullMark: 5 },
-      { subject: "Nettoyer (Shine)", A: Number((totals.shine / numZones).toFixed(2)), fullMark: 5 },
-      { subject: "Standardiser (Standardize)", A: Number((totals.standardize / numZones).toFixed(2)), fullMark: 5 },
-      { subject: "Maintenir (Sustain)", A: Number((totals.sustain / numZones).toFixed(2)), fullMark: 5 }
+      { subject: getPillarLabel("sort", "report"), A: Number((totals.sort / numZones).toFixed(2)), fullMark: 5 },
+      { subject: getPillarLabel("setInOrder", "report"), A: Number((totals.setInOrder / numZones).toFixed(2)), fullMark: 5 },
+      { subject: getPillarLabel("shine", "report"), A: Number((totals.shine / numZones).toFixed(2)), fullMark: 5 },
+      { subject: getPillarLabel("standardize", "report"), A: Number((totals.standardize / numZones).toFixed(2)), fullMark: 5 },
+      { subject: getPillarLabel("sustain", "report"), A: Number((totals.sustain / numZones).toFixed(2)), fullMark: 5 }
     ];
   };
 
   const radarData = aggregatePiliers();
 
   // C. Line Chart: History (directly matches context data)
-  const lineData = history;
+  const lineData = history.map((item) => ({ ...item, month: getMonthLabel(item.month) }));
 
   // D. Donut/Pie Chart: Actions status
   const pieData = [
-    { name: "Ouvertes", value: actionsKPI.open, color: "#3B82F6" },
-    { name: "En cours", value: actionsKPI.inProgress, color: "#F59E0B" },
-    { name: "Clôturées", value: actionsKPI.closed, color: "#10B981" },
-    { name: "En retard", value: actionsKPI.overdue, color: "#EF4444" }
+    { name: t("common.open"), value: actionsKPI.open, color: "#3B82F6" },
+    { name: t("common.inProgress"), value: actionsKPI.inProgress, color: "#F59E0B" },
+    { name: t("common.closed"), value: actionsKPI.closed, color: "#10B981" },
+    { name: t("common.overdue"), value: actionsKPI.overdue, color: "#EF4444" }
   ].filter(item => item.value > 0); // Only display non-zero values
-
-  // Custom cell renderer for Bar chart to color bars individually
-  const CustomBarShape = (props) => {
-    const { fill, x, y, width, height } = props;
-    return <rect x={x} y={y} width={width} height={height} fill={fill} rx={4} ry={4} />;
-  };
 
   return (
     <div className="space-y-6">
@@ -132,18 +124,20 @@ export default function Dashboard({ setCurrentTab }) {
           </div>
           <div>
             <h2 className="text-2xl font-black text-white tracking-tight leading-tight">
-              MYC 5S Audit Dashboard
+              {t("dashboard.heroTitle")}
             </h2>
             <p className="text-slate-300 text-sm mt-0.5 font-medium">
-              Pilotage Qualité Industriel 5S · MYC Innovation Monastir
+              {t("dashboard.heroSubtitle")}
             </p>
           </div>
           {/* Right info */}
           <div className="ml-auto flex items-center gap-3 hidden sm:flex">
             <div className="text-right">
-              <span className="text-xs text-slate-400 font-medium block">Dernière mise à jour</span>
+              <span className="text-xs text-slate-400 font-medium block">{t("common.lastUpdated")}</span>
               <span className="text-sm font-bold text-white">
-                {zones.map(z => z.lastAuditDate).filter(Boolean).sort().reverse()[0] || "Aujourd'hui"}
+                {zones.map((z) => z.lastAuditDate).filter(Boolean).sort().reverse()[0]
+                  ? formatDate(zones.map((z) => z.lastAuditDate).filter(Boolean).sort().reverse()[0])
+                  : t("common.today")}
               </span>
             </div>
             <button
@@ -151,7 +145,7 @@ export default function Dashboard({ setCurrentTab }) {
               className="flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-bold text-white shadow-md shadow-red-600/30 hover:bg-red-500 transition-all duration-200 cursor-pointer"
             >
               <ClipboardList className="h-4 w-4" />
-              <span>Nouvel Audit 5S</span>
+              <span>{t("dashboard.newAudit")}</span>
             </button>
           </div>
         </div>
@@ -163,11 +157,11 @@ export default function Dashboard({ setCurrentTab }) {
         <div className={`col-span-2 rounded-2xl border bg-white p-5 shadow-sm transition-all hover:shadow-md ${getScoreCardBorder(globalScore)}`}>
           <div className="flex items-start justify-between">
             <div>
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Score Global 5S</span>
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">{t("common.scoreGlobal")} 5S</span>
               <div className="mt-2 flex items-baseline gap-2">
                 <span className="text-4xl font-extrabold tracking-tight text-slate-900">{globalScore}%</span>
                 <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${getScoreColor(globalScore)}`}>
-                  {globalScore >= 75 ? "Excellent" : globalScore >= 50 ? "Acceptable" : "Critique"}
+                  {globalScore >= 75 ? t("common.excellent") : globalScore >= 50 ? t("common.acceptable") : t("common.critical")}
                 </span>
               </div>
             </div>
@@ -186,7 +180,7 @@ export default function Dashboard({ setCurrentTab }) {
               />
             </div>
             <div className="flex justify-between text-[10px] text-slate-400 font-medium">
-              <span>Objectif: &gt;75%</span>
+              <span>{t("dashboard.scoreObjective")}</span>
               <span>100%</span>
             </div>
           </div>
@@ -196,9 +190,9 @@ export default function Dashboard({ setCurrentTab }) {
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:shadow-md">
           <div className="flex items-start justify-between">
             <div>
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Zones</span>
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">{t("dashboard.auditedLabel")}</span>
               <div className="mt-2 text-3xl font-extrabold text-slate-900">{zonesAudited}</div>
-              <p className="text-xs text-slate-400 mt-1 font-medium">Sur {zones.length} zones totales</p>
+              <p className="text-xs text-slate-400 mt-1 font-medium">{t("dashboard.totalZones", { count: zones.length })}</p>
             </div>
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
               <MapPin className="h-5 w-5" />
@@ -210,9 +204,9 @@ export default function Dashboard({ setCurrentTab }) {
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:shadow-md">
           <div className="flex items-start justify-between">
             <div>
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Actions</span>
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">{t("dashboard.actions")}</span>
               <div className="mt-2 text-3xl font-extrabold text-slate-900">{actionsKPI.open + actionsKPI.inProgress}</div>
-              <p className="text-xs text-slate-400 mt-1 font-medium">{actionsKPI.open} ouvertes | {actionsKPI.inProgress} en cours</p>
+              <p className="text-xs text-slate-400 mt-1 font-medium">{t("dashboard.openActionsLabel", { open: actionsKPI.open, inProgress: actionsKPI.inProgress })}</p>
             </div>
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
               <TrendingUp className="h-5 w-5" />
@@ -226,11 +220,11 @@ export default function Dashboard({ setCurrentTab }) {
         }`}>
           <div className="flex items-start justify-between">
             <div>
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">En retard</span>
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">{t("common.overdue")}</span>
               <div className={`mt-2 text-3xl font-extrabold ${actionsKPI.overdue > 0 ? "text-red-600" : "text-slate-900"}`}>
                 {actionsKPI.overdue}
               </div>
-              <p className="text-xs text-slate-400 mt-1 font-medium">Date limite dépassée</p>
+              <p className="text-xs text-slate-400 mt-1 font-medium">{t("dashboard.overdueHint")}</p>
             </div>
             <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${
               actionsKPI.overdue > 0 ? "bg-red-100 text-red-600" : "bg-slate-100 text-slate-600"
@@ -244,9 +238,9 @@ export default function Dashboard({ setCurrentTab }) {
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:shadow-md col-span-1">
           <div className="flex items-start justify-between gap-1">
             <div className="min-w-0">
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Top Zone</span>
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">{t("dashboard.topZone")}</span>
               <div className="mt-2 text-base font-bold text-slate-900 truncate" title={bestZone?.name}>
-                {bestZone?.name}
+                {bestZone ? getZoneName(bestZone) : ""}
               </div>
               <p className="text-xs font-semibold text-emerald-600 mt-1">{bestZone?.score}% score</p>
             </div>
@@ -260,9 +254,9 @@ export default function Dashboard({ setCurrentTab }) {
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:shadow-md col-span-1">
           <div className="flex items-start justify-between gap-1">
             <div className="min-w-0">
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Zone Critique</span>
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">{t("dashboard.criticalZone")}</span>
               <div className="mt-2 text-base font-bold text-slate-900 truncate" title={criticalZone?.name}>
-                {criticalZone?.name}
+                {criticalZone ? getZoneName(criticalZone) : ""}
               </div>
               <p className="text-xs font-semibold text-red-500 mt-1">{criticalZone?.score}% score</p>
             </div>
@@ -278,8 +272,8 @@ export default function Dashboard({ setCurrentTab }) {
         {/* Bar Chart: Scores by Zone */}
         <div className="lg:col-span-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between pb-4">
-            <h3 className="text-base font-bold text-slate-900">Score 5S par Zone MYC (%)</h3>
-            <span className="text-xs font-semibold text-slate-400">Objectif global: &gt; 75%</span>
+            <h3 className="text-base font-bold text-slate-900">{t("dashboard.scoreByZone")}</h3>
+            <span className="text-xs font-semibold text-slate-400">{t("dashboard.globalObjective")}</span>
           </div>
           <div className="h-72 w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -316,7 +310,7 @@ export default function Dashboard({ setCurrentTab }) {
 
         {/* Radar Chart: Scores by Pilier */}
         <div className="lg:col-span-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h3 className="text-base font-bold text-slate-900 pb-4">Profil Global 5S par Pilier</h3>
+          <h3 className="text-base font-bold text-slate-900 pb-4">{t("dashboard.globalProfile")}</h3>
           <div className="h-72 w-full flex items-center justify-center">
             <ResponsiveContainer width="100%" height="100%">
               <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
@@ -324,7 +318,7 @@ export default function Dashboard({ setCurrentTab }) {
                 <PolarAngleAxis dataKey="subject" tick={{ fill: "#64748B", fontSize: 9, fontWeight: 500 }} />
                 <PolarRadiusAxis angle={30} domain={[0, 5]} tick={{ fontSize: 9 }} stroke="#94A3B8" />
                 <Radar
-                  name="Moyenne MYC"
+                  name="MYC"
                   dataKey="A"
                   stroke="#E53E3E"
                   fill="#E53E3E"
@@ -357,7 +351,7 @@ export default function Dashboard({ setCurrentTab }) {
         <div className="lg:col-span-7 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between pb-3">
-              <h3 className="text-base font-bold text-slate-900">Cartographie Thermique des Zones (Heatmap)</h3>
+              <h3 className="text-base font-bold text-slate-900">{t("dashboard.heatmap")}</h3>
               <div className="flex gap-2.5 text-[10px] font-semibold text-slate-500">
                 <span className="flex items-center gap-1"><span className="h-2 w-2 rounded bg-emerald-500"/> &gt;75%</span>
                 <span className="flex items-center gap-1"><span className="h-2 w-2 rounded bg-amber-500"/> 50-75%</span>
@@ -365,7 +359,7 @@ export default function Dashboard({ setCurrentTab }) {
               </div>
             </div>
             <p className="text-xs text-slate-400 pb-4">
-              Cliquez sur une zone pour afficher sa fiche de synthèse en temps réel.
+              {t("dashboard.heatmapHint")}
             </p>
 
             {/* Simple Grid Heatmap */}
@@ -392,12 +386,12 @@ export default function Dashboard({ setCurrentTab }) {
                     }`}
                   >
                     <div className="flex items-center justify-between gap-1.5">
-                      <span className="text-xs font-bold truncate pr-3 group-hover:text-red-950">{zone.name}</span>
+                      <span className="text-xs font-bold truncate pr-3 group-hover:text-red-950">{getZoneName(zone)}</span>
                       <span className="text-xs font-extrabold shrink-0">{zone.score}%</span>
                     </div>
                     <div className="mt-2.5 flex items-center gap-1.5 text-[9px] text-slate-500 font-medium">
                       <span className={`h-1.5 w-1.5 rounded-full ${dotColor}`} />
-                      <span className="truncate">{zone.manager.split(" ")[1] || "Resp"}</span>
+                      <span className="truncate">{zone.manager.split(" ")[1] || t("common.responsible")}</span>
                     </div>
                   </button>
                 );
@@ -411,7 +405,7 @@ export default function Dashboard({ setCurrentTab }) {
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-2">
-                    <h4 className="text-sm font-bold text-slate-800">{selectedHeatmapZone.name}</h4>
+                    <h4 className="text-sm font-bold text-slate-800">{getZoneName(selectedHeatmapZone)}</h4>
                     <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold text-white ${
                       selectedHeatmapZone.score < 50 ? "bg-red-500" : selectedHeatmapZone.score <= 75 ? "bg-amber-500" : "bg-emerald-500"
                     }`}>
@@ -419,29 +413,29 @@ export default function Dashboard({ setCurrentTab }) {
                     </span>
                   </div>
                   <p className="text-xs text-slate-500 mt-1">
-                    <span className="font-semibold text-slate-600">Responsable :</span> {selectedHeatmapZone.manager} | 
-                    <span className="font-semibold text-slate-600 ml-1.5">Dernier audit :</span> {selectedHeatmapZone.lastAuditDate}
+                    <span className="font-semibold text-slate-600">{t("common.responsible")} :</span> {selectedHeatmapZone.manager} | 
+                    <span className="font-semibold text-slate-600 ml-1.5">{t("common.lastAudit")} :</span> {formatDate(selectedHeatmapZone.lastAuditDate)}
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2.5">
                   <div className="rounded-lg bg-white px-2.5 py-1 border border-slate-200/50 text-[10px] shadow-2xs">
-                    <span className="text-slate-400 font-medium mr-1.5">Trier:</span>
+                    <span className="text-slate-400 font-medium mr-1.5">{getPillarLabel("sort")}:</span>
                     <span className="font-bold text-slate-700">{selectedHeatmapZone.scoresByPilier.sort}/5</span>
                   </div>
                   <div className="rounded-lg bg-white px-2.5 py-1 border border-slate-200/50 text-[10px] shadow-2xs">
-                    <span className="text-slate-400 font-medium mr-1.5">Ranger:</span>
+                    <span className="text-slate-400 font-medium mr-1.5">{getPillarLabel("setInOrder")}:</span>
                     <span className="font-bold text-slate-700">{selectedHeatmapZone.scoresByPilier.setInOrder}/5</span>
                   </div>
                   <div className="rounded-lg bg-white px-2.5 py-1 border border-slate-200/50 text-[10px] shadow-2xs">
-                    <span className="text-slate-400 font-medium mr-1.5">Nettoyer:</span>
+                    <span className="text-slate-400 font-medium mr-1.5">{getPillarLabel("shine")}:</span>
                     <span className="font-bold text-slate-700">{selectedHeatmapZone.scoresByPilier.shine}/5</span>
                   </div>
                   <div className="rounded-lg bg-white px-2.5 py-1 border border-slate-200/50 text-[10px] shadow-2xs">
-                    <span className="text-slate-400 font-medium mr-1.5">Stand.:</span>
+                    <span className="text-slate-400 font-medium mr-1.5">{getPillarLabel("standardize")}:</span>
                     <span className="font-bold text-slate-700">{selectedHeatmapZone.scoresByPilier.standardize}/5</span>
                   </div>
                   <div className="rounded-lg bg-white px-2.5 py-1 border border-slate-200/50 text-[10px] shadow-2xs">
-                    <span className="text-slate-400 font-medium mr-1.5">Maint.:</span>
+                    <span className="text-slate-400 font-medium mr-1.5">{getPillarLabel("sustain")}:</span>
                     <span className="font-bold text-slate-700">{selectedHeatmapZone.scoresByPilier.sustain}/5</span>
                   </div>
                 </div>
@@ -449,13 +443,13 @@ export default function Dashboard({ setCurrentTab }) {
                   onClick={() => setCurrentTab("zones")}
                   className="flex items-center gap-1 text-xs font-bold text-red-600 hover:text-red-700 shrink-0 cursor-pointer"
                 >
-                  <span>Détails zone</span>
+                  <span>{t("common.details")}</span>
                   <ChevronRight className="h-4 w-4" />
                 </button>
               </div>
             ) : (
               <div className="flex h-full items-center justify-center text-xs text-slate-400 italic">
-                Sélectionnez une zone ci-dessus pour inspecter ses scores par pilier 5S.
+                {t("dashboard.selectZoneHint")}
               </div>
             )}
           </div>
@@ -465,7 +459,7 @@ export default function Dashboard({ setCurrentTab }) {
         <div className="lg:col-span-5 grid grid-cols-1 gap-6">
           {/* C. Line Chart: Evolution */}
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h3 className="text-base font-bold text-slate-900 pb-3">Évolution Mensuelle du Score Global (%)</h3>
+            <h3 className="text-base font-bold text-slate-900 pb-3">{t("dashboard.monthlyEvolution")}</h3>
             <div className="h-44 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={lineData} margin={{ top: 5, right: 10, left: -25, bottom: 0 }}>
@@ -500,7 +494,7 @@ export default function Dashboard({ setCurrentTab }) {
 
           {/* D. Donut Chart: Plan d'action répartition */}
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm flex flex-col justify-between">
-            <h3 className="text-base font-bold text-slate-900 pb-2">Statut des Actions Correctives</h3>
+            <h3 className="text-base font-bold text-slate-900 pb-2">{t("dashboard.actionStatus")}</h3>
             
             {pieData.length > 0 ? (
               <div className="flex items-center justify-between gap-2 h-36">
@@ -551,7 +545,7 @@ export default function Dashboard({ setCurrentTab }) {
               </div>
             ) : (
               <div className="flex h-36 items-center justify-center text-xs text-slate-400 italic">
-                Aucune action corrective enregistrée.
+                {t("dashboard.noActions")}
               </div>
             )}
           </div>
